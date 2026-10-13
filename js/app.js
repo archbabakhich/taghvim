@@ -248,7 +248,7 @@ function sagePanel(j,onlyMatch){
   var q=Cal.j2p(j),hit=PEOPLE.filter(function(p){return p.m===q.m&&p.d===q.d});
   var h='';
   if(hit.length){
-    h+='<section class="panel sage"><div class="label">'+(j===today?'امروز':'این روز')+' در تقویم بزرگان</div>'+hit.slice(0,3).map(function(p){
+    h+='<section class="panel sage"><div class="label">'+(j===today?'امروز':'این روز')+' در تقویم شاعر، دانشمند، فیلسوف و عارف</div>'+hit.slice(0,3).map(function(p){
       var who=p.n+' ('+p.r+')',head='<div class="vh">'+esc(p.e+' '+p.n)+'</div>';
       var body=p.q&&p.q.length?quoteHtml(p.q[Math.abs(j+q.y)%p.q.length][0],p.q[Math.abs(j+q.y)%p.q.length][1],p.n):'';
       return head+body+'<div class="sm">'+esc(p.b)+'</div>';
@@ -265,7 +265,7 @@ function royalPanel(){
   var list=evs(today).filter(function(e){return e.k==='royal'||e.k==='kings'});
   var py=pd(today).y,h='';
   if(list.length){
-    h+='<section class="panel royal"><div class="label">امروز در تقویم خاندان پهلوی و شاهان ایران</div>'+list.map(function(e){
+    h+='<section class="panel royal"><div class="label">امروز در تقویم خاندان پهلوی و شاه ایران</div>'+list.map(function(e){
       var on=originNote(e,py);
       return '<div class="rt"><b>'+esc(e.t)+'</b>'+(on?'<small>'+on+'</small>':'')+'</div>';
     }).join('')+'</section>';
