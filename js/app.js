@@ -152,6 +152,11 @@ function clockHTML(){
 function tickClock(){var e=document.getElementById('tclock');if(e)e.innerHTML=clockHTML()}
 setInterval(tickClock,1000);
 
+function tahvilPill(){
+  try{var nn=nextNowruz(),j=msJ(nn.ms,'tehran');
+    return '<span class="pill">تحویل: '+wdName(j)+' '+shortLabel(j)+' · ساعت '+msClock(nn.ms,'tehran')+' تهران'+(S.tz==='tehran'?'':' · '+msClock(nn.ms,'device')+' دستگاه')+'</span>';
+  }catch(e){return ''}
+}
 function hero(){
   var p=tp,ms=Date.now(),mo=Astro.moonState(ms);
   var h='<section class="hero" aria-label="امروز"><div class="eyebrow">امروز · '+wdName(today)+(isHol(today)?' · روز تعطیل':'')+'</div>'+
@@ -161,7 +166,7 @@ function hero(){
   if(S.showMoon)h+='<div class="moon" title="'+moonName(mo.frac)+'">'+moonSVG(mo.frac,34)+'</div>';
   var nextSpring={py:p.y+1},days=Math.max(0,Cal.pYearStart(p.y+1)-today);
   h+='<div class="chipline"><span class="pill">'+seasonOf(p.m)+'</span><span class="pill">روز '+num(Cal.dayOfYear(today))+' از '+num(Cal.pYearLen(p.y))+'</span>'+
-    '<span class="pill">هفتهٔ '+num(Cal.weekOfYear(today,S.weekStart))+'</span><span class="pill">'+num(days)+' روز تا نوروز '+num(impY(nextSpring.py))+'</span></div></section>';
+    '<span class="pill">هفتهٔ '+num(Cal.weekOfYear(today,S.weekStart))+'</span><span class="pill">'+num(days)+' روز تا نوروز '+num(impY(nextSpring.py))+'</span>'+tahvilPill()+'</div></section>';
   return h;
 }
 function nextNowruz(){
