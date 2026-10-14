@@ -5,6 +5,7 @@ var CATS={
   ancient:{n:'جشن‌های باستانی ایران',on:1},
   kings:{n:'شاه ایران (جلوس و درگذشت)',on:1},
   royal:{n:'خاندان پهلوی',on:1},
+  martyr:{n:'جاویدنام',on:1},
   hist:{n:'رویدادهای تاریخی',on:1},
   nat:{n:'روزهای ملی',on:1},
   culture:{n:'شاعر، دانشمند، فیلسوف و عارف',on:1},
@@ -12,7 +13,7 @@ var CATS={
   intl:{n:'روزهای جهانی',on:0},
   personal:{n:'یادداشت‌های من',on:1}
 };
-var CAT_ORDER=['ancient','kings','royal','hist','nat','culture','relig','intl','personal'];
+var CAT_ORDER=['ancient','kings','royal','martyr','hist','nat','culture','relig','intl','personal'];
 var cache={},personal=[];
 
 /* ---------- personal events ---------- */

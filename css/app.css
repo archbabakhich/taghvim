@@ -10,19 +10,19 @@
 :root{
   --bg:#F7F4EA;--bg-2:#EDE8D6;--surface:#FFFEF9;--surface-2:#F2EAD3;--ink:#1A1813;--ink-2:#5B5444;--line:#E1D6B9;
   --accent:#0F5A29;--accent-2:#1B8A3A;--on-accent:#FFFCF4;--gold:#A97410;--gold-soft:#E8C873;--red:#D0021B;
-  --c-ancient:#A97410;--c-kings:#37678F;--c-royal:#C62828;--c-hist:#7A4A2E;--c-nat:#2F7D6B;--c-culture:#6A4C93;--c-relig:#3C7A2E;--c-intl:#5B6B7B;--c-personal:#C2185B;
+  --c-ancient:#A97410;--c-kings:#37678F;--c-royal:#C62828;--c-hist:#7A4A2E;--c-nat:#2F7D6B;--c-culture:#6A4C93;--c-relig:#3C7A2E;--c-intl:#5B6B7B;--c-personal:#C2185B;--c-martyr:#B71C1C;
   --shadow:0 1px 2px rgba(60,45,10,.08),0 6px 18px rgba(60,45,10,.07);
   --r:14px;color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#12100B;--bg-2:#1A170F;--surface:#1D1A12;--surface-2:#28241A;--ink:#F2EBD7;--ink-2:#B7AC92;--line:#363022;
   --accent:#8EDCA3;--accent-2:#6BCB88;--on-accent:#08200F;--gold:#E3B24E;--gold-soft:#6B5316;--red:#FF8F86;
-  --c-ancient:#E3B24E;--c-kings:#8FB8DA;--c-royal:#FF8A80;--c-hist:#D7B58A;--c-nat:#6FCDB5;--c-culture:#C3A6E8;--c-relig:#93D17F;--c-intl:#9FB2C4;--c-personal:#F48FB1;
+  --c-ancient:#E3B24E;--c-kings:#8FB8DA;--c-royal:#FF8A80;--c-hist:#D7B58A;--c-nat:#6FCDB5;--c-culture:#C3A6E8;--c-relig:#93D17F;--c-intl:#9FB2C4;--c-personal:#F48FB1;--c-martyr:#FF6F6F;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12100B;--bg-2:#1A170F;--surface:#1D1A12;--surface-2:#28241A;--ink:#F2EBD7;--ink-2:#B7AC92;--line:#363022;
   --accent:#8EDCA3;--accent-2:#6BCB88;--on-accent:#08200F;--gold:#E3B24E;--gold-soft:#6B5316;--red:#FF8F86;
-  --c-ancient:#E3B24E;--c-kings:#8FB8DA;--c-royal:#FF8A80;--c-hist:#D7B58A;--c-nat:#6FCDB5;--c-culture:#C3A6E8;--c-relig:#93D17F;--c-intl:#9FB2C4;--c-personal:#F48FB1;
+  --c-ancient:#E3B24E;--c-kings:#8FB8DA;--c-royal:#FF8A80;--c-hist:#D7B58A;--c-nat:#6FCDB5;--c-culture:#C3A6E8;--c-relig:#93D17F;--c-intl:#9FB2C4;--c-personal:#F48FB1;--c-martyr:#FF6F6F;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -90,7 +90,7 @@ svg{display:block}
 .cell.sel{outline:2px solid var(--gold);outline-offset:-2px}
 .dots{position:absolute;top:5px;right:6px;left:6px;display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--c-intl)}
-.dot.ancient{background:var(--c-ancient)}.dot.kings{background:var(--c-kings)}.dot.royal{background:var(--c-royal)}.dot.hist{background:var(--c-hist)}.dot.nat{background:var(--c-nat)}
+.dot.ancient{background:var(--c-ancient)}.dot.kings{background:var(--c-kings)}.dot.martyr{background:var(--c-martyr)}.dot.royal{background:var(--c-royal)}.dot.hist{background:var(--c-hist)}.dot.nat{background:var(--c-nat)}
 .dot.culture{background:var(--c-culture)}.dot.relig{background:var(--c-relig)}.dot.intl{background:var(--c-intl)}.dot.personal{background:var(--c-personal)}
 .cell.today .dot{box-shadow:0 0 0 1.5px #fff}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-2);margin:10px 2px 0}
@@ -110,7 +110,7 @@ svg{display:block}
 .ev .t .ti{font-weight:500}
 .ev .t small{display:block;color:var(--ink-2);font-size:12.5px}
 .ev .bar-c{width:4px;border-radius:2px;align-self:stretch;background:var(--c-intl);flex:none}
-.ev .bar-c.ancient{background:var(--c-ancient)}.ev .bar-c.kings{background:var(--c-kings)}.ev .bar-c.royal{background:var(--c-royal)}.ev .bar-c.hist{background:var(--c-hist)}.ev .bar-c.nat{background:var(--c-nat)}
+.ev .bar-c.ancient{background:var(--c-ancient)}.ev .bar-c.kings{background:var(--c-kings)}.ev .bar-c.martyr{background:var(--c-martyr)}.ev .bar-c.royal{background:var(--c-royal)}.ev .bar-c.hist{background:var(--c-hist)}.ev .bar-c.nat{background:var(--c-nat)}
 .ev .bar-c.culture{background:var(--c-culture)}.ev .bar-c.relig{background:var(--c-relig)}.ev .bar-c.intl{background:var(--c-intl)}.ev .bar-c.personal{background:var(--c-personal)}
 .tag{display:inline-block;font-size:11px;padding:0 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);margin-inline-start:6px}
 .tag.hol{background:rgba(179,38,30,.12);color:var(--red)}

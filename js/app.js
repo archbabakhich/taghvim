@@ -134,7 +134,7 @@ function hero(){
     '<div class="big">'+num(p.d)+' '+PM[p.m-1]+' '+num(impY(p.y))+'</div>'+
     '<div class="lines"><span>'+shStr(today)+'</span><span>'+gStr(today)+'</span>'+(S.showHijri?'<span>'+hStr(today)+'</span>':'')+'</div>';
   if(S.showMoon)h+='<div class="moon" title="'+moonName(mo.frac)+'">'+moonSVG(mo.frac,34)+'</div>';
-  var nextSpring=nextNowruz(),days=Math.max(0,msJ(nextSpring.ms,S.tz)-today);
+  var nextSpring={py:p.y+1},days=Math.max(0,Cal.pYearStart(p.y+1)-today);
   h+='<div class="chipline"><span class="pill">'+seasonOf(p.m)+'</span><span class="pill">روز '+num(Cal.dayOfYear(today))+' از '+num(Cal.pYearLen(p.y))+'</span>'+
     '<span class="pill">هفتهٔ '+num(Cal.weekOfYear(today,S.weekStart))+'</span><span class="pill">'+num(days)+' روز تا نوروز '+num(impY(nextSpring.py))+'</span></div></section>';
   return h;
