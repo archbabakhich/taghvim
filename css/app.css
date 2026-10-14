@@ -246,4 +246,5 @@ section.royal{border-inline-start:4px solid var(--c-royal)}
 .hero .tclock small{display:block;opacity:.85;font-size:11.5px;line-height:1.6}
 
 .site{direction:ltr;color:var(--accent);font-weight:700;text-decoration:none;font-size:12.5px}
-.credit .site{margin-top:2px}
+.credit .site{display:inline-block;margin-top:4px;padding:10px 14px;border:1.5px solid var(--accent);border-radius:99px;align-self:flex-start;-webkit-tap-highlight-color:transparent}
+.panel.about .site{display:inline-block;padding:10px 14px;border:1.5px solid var(--accent);border-radius:99px}
