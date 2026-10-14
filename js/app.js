@@ -509,7 +509,7 @@ function vSettings(){
   h+='<section class="panel"><p class="label">خروجی و پشتیبان</p><div class="row tight"><button class="btn sm" data-a="ics">خروجی برای تقویم گوشی (ICS)</button><button class="btn ghost sm" data-a="bk-export">پشتیبان یادداشت‌ها</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div>'+
     '<p class="note">فایل ICS مناسبت‌های دسته‌های روشن را برای پنج سال به‌صورت رویدادهای تمام‌روزه می‌سازد و با Google Calendar یا برنامهٔ تقویم گوشی باز می‌شود.</p></section>';
   if(installEv)h+='<section class="panel"><p class="label">نصب</p><button class="btn" data-a="install">نصب روی صفحهٔ اصلی</button></section>';
-  h+='<section class="panel about"><div class="logo"><img src="logo.png" alt="Lion and Sun – Architecture Studio"></div><p><b>تقویم شاهنشاهی</b> · نسخه B25</p><p>طراح و سازنده: <b>بابک محمدزاده</b></p><p>Architecture Studio Lion and Sun</p></section>';
+  h+='<section class="panel about"><div class="logo"><img src="logo.png" alt="Lion and Sun – Architecture Studio"></div><p><b>تقویم شاهنشاهی</b> · نسخه B25</p><p>طراح و سازنده: <b>بابک محمدزاده</b></p><p>Architecture Studio Lion and Sun</p><p><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></p></section>';
   h+='<section class="panel"><p class="label">منابع و سپاس</p><div class="credit">سال شاهنشاهی = سال هجری شمسی + ۱۱۸۰ (مبدأ: تاجگذاری کوروش بزرگ؛ رسمی از ۲۴ اسفند ۱۳۵۴ تا ۵ شهریور ۱۳۵۷).<br>'+
     'جدول سال‌های کبیسه ۱۳۰۴ تا ۱۴۹۸: مرکز تقویم مؤسسهٔ ژئوفیزیک دانشگاه تهران.<br>'+
     'جدول ماه‌های قمری ایران: داده‌های Qamari (روزبه پورنادر) و پروژهٔ تقویم فارسی.<br>'+
@@ -575,7 +575,7 @@ function personalSheet(opts){
 
 function footerBlock(){
   var bk=st.tab==='settings'?'':'<section class="panel bkp"><p class="label">پشتیبان‌گیری</p><p class="sm" style="margin:0 0 8px">یادداشت‌ها و تنظیمات شما فقط روی همین دستگاه ذخیره می‌شود؛ از آن‌ها پشتیبان بگیرید.</p><div class="row tight"><button class="btn sm" data-a="bk-export">ذخیرهٔ پشتیبان</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی از فایل<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div></section>';
-  return bk+'<footer class="credit"><img src="logo.png" alt=""><div><b>طراح: بابک محمدزاده</b><span>Architecture Studio Lion and Sun</span></div></footer>';
+  return bk+'<footer class="credit"><img src="logo.png" alt=""><div><b>طراح: بابک محمدزاده</b><span>Architecture Studio Lion and Sun</span><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></div></footer>';
 }
 var TABS=[['month','month','ماه'],['year','year','سال'],['events','star','رویدادها'],['tunnel','tunnel','تونل زمان'],['tools','tools','ابزار'],['settings','gear','تنظیمات']];
 function render(keepScroll){
