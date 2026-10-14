@@ -17,7 +17,9 @@ var ICON={
   tools:'<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   prev:'<path d="M9 6l6 6-6 6"/>',next:'<path d="M15 6l-6 6 6 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',
-  share:'<path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6"/>'
+  share:'<path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6"/>',
+  bell:'<path d="M6 16v-5a6 6 0 1112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/>',
+  refresh:'<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>'
 };
 function ic(n,cls){return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>'}
 
@@ -360,7 +362,86 @@ function remView(){
   h+='<section class="panel"><p class="label">اعلان و تقویم گوشی</p><p class="note" style="margin-top:0">با باز بودن برنامه، یادآوری سر وقت اعلان می‌شود. مرورگرها اجازهٔ اعلان در زمانی که برنامه بسته است را به برنامه‌های وب نمی‌دهند؛ برای یادآوری مطمئن، یادآوری‌ها را به تقویم گوشی بفرستید.</p><div class="row tight"><button class="btn sm" data-a="notify">'+((window.Notification&&Notification.permission==='granted')?'اعلان‌ها روشن است':'روشن‌کردن اعلان‌ها')+'</button><button class="btn ghost sm" data-a="ics-rem">یادآوری‌ها در تقویم گوشی (ICS)</button></div></section>';
   return h;
 }
-function askNotify(){try{if(window.Notification&&Notification.permission==='default')Notification.requestPermission().then(function(){checkReminders(true)})}catch(e){}}
+function askNotify(){try{if(window.Notification&&Notification.permission==='default')Notification.requestPermission().then(function(){checkReminders(true);registerBgNews();if(st.tab==='news'&&!sheetOpen)render(true)})}catch(e){}}
+
+/* ---------- news (خبرها) ---------- */
+var NKEY='taghvim-news-cache',NREAD='taghvim-news-read',NSEEN='taghvim-news-seen',NSTATE='taghvim-news-state';
+var NEWS={items:[],loading:false,fail:false};
+function lsGet(k,def){try{var v=JSON.parse(localStorage.getItem(k));return v==null?def:v}catch(e){return def}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+(function(){var c=lsGet(NKEY,null);if(c&&c.items)NEWS.items=c.items})();
+function newsOk(i){return i&&typeof i==='object'&&i.id&&i.title}
+function newsSorted(){return NEWS.items.slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))})}
+function newsUnreadCount(){var r=lsGet(NREAD,null);if(!r)return 0;return NEWS.items.filter(function(i){return r.indexOf(String(i.id))<0}).length}
+function markNewsRead(){lsSet(NREAD,NEWS.items.map(function(i){return String(i.id)}))}
+function getSeen(){
+  var ls=lsGet(NSEEN,null);
+  if(!window.caches)return Promise.resolve(ls);
+  return caches.open(NSTATE).then(function(c){return c.match('seen')}).then(function(r){return r?r.json():null}).then(function(cs){
+    if(cs===null&&ls===null)return null;
+    var all=(cs||[]).concat(ls||[]);return all.filter(function(x,i){return all.indexOf(x)===i});
+  }).catch(function(){return ls});
+}
+function setSeen(a){
+  a=a.slice(-200);lsSet(NSEEN,a);
+  try{if(window.caches)caches.open(NSTATE).then(function(c){return c.put('seen',new Response(JSON.stringify(a)))}).catch(function(){})}catch(e){}
+}
+function notifyNews(list){
+  if(!list.length)return;
+  toast('خبر تازه: '+list[0].title);
+  try{if(window.Notification&&Notification.permission==='granted'&&navigator.serviceWorker){
+    navigator.serviceWorker.ready.then(function(r){list.slice(0,5).forEach(function(i){
+      r.showNotification(String(i.title),{body:String(i.body||''),icon:'icons/icon-192.png',badge:'icons/icon-192.png',tag:'taghvim-news-'+i.id,lang:'fa',dir:'rtl',data:{url:'./?tab=news'}});
+    })});
+  }}catch(e){}
+}
+function registerBgNews(){
+  try{if(!navigator.serviceWorker||!window.Notification||Notification.permission!=='granted')return;
+    navigator.serviceWorker.ready.then(function(r){if(r.periodicSync)r.periodicSync.register('taghvim-news',{minInterval:6*3600*1000}).catch(function(){})});
+  }catch(e){}
+}
+function fetchNews(manual){
+  if(NEWS.loading)return Promise.resolve();
+  NEWS.loading=true;var before=JSON.stringify(NEWS.items)+NEWS.fail;
+  return fetch('news.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('http');return r.json()}).then(function(d){
+    var items=((d&&d.items)||[]).filter(newsOk).map(function(i){i.id=String(i.id);return i});
+    NEWS.items=items;NEWS.fail=false;lsSet(NKEY,{items:items});
+    return getSeen().then(function(seen){
+      var ids=items.map(function(i){return i.id});
+      if(seen===null){setSeen(ids);if(lsGet(NREAD,null)===null)lsSet(NREAD,ids);return}
+      var fresh=items.filter(function(i){return seen.indexOf(i.id)<0});
+      if(fresh.length){setSeen(seen.concat(fresh.map(function(i){return i.id})));notifyNews(fresh)}
+    });
+  }).catch(function(){NEWS.fail=true;if(manual)toast('دریافت خبرها انجام نشد. اینترنت را بررسی کنید.')}).then(function(){
+    NEWS.loading=false;
+    if((manual||JSON.stringify(NEWS.items)+NEWS.fail!==before)&&!sheetOpen)render(true);
+  });
+}
+function newsLink(u){return /^https?:\/\//i.test(String(u||''))?String(u):''}
+function newsDate(s){
+  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||''));if(!m)return '';
+  try{return impStr(Cal.g2j(+m[1],+m[2],+m[3]))}catch(e){return ''}
+}
+function vNews(){
+  var rd=lsGet(NREAD,[])||[];
+  var h='<div class="bar"><div><h2>خبرها</h2><div class="sub">اطلاعیه‌ها و اخبار تقویم شاهنشاهی</div></div><button class="ib" data-a="news-refresh" aria-label="بروزرسانی خبرها">'+ic('refresh')+'</button></div>';
+  var perm=window.Notification?Notification.permission:'none';
+  if(perm==='granted')h+='<p class="note" style="margin:0 0 10px">اعلان خبرها روشن است؛ خبر تازه به‌صورت اعلان روی گوشی نمایش داده می‌شود.</p>';
+  else if(perm==='none')h+='<p class="note" style="margin:0 0 10px">این مرورگر اعلان را پشتیبانی نمی‌کند؛ خبرها فقط داخل برنامه نمایش داده می‌شوند.</p>';
+  else h+='<section class="panel"><p class="note" style="margin-top:0">برای دریافت خبر تازه به‌صورت اعلان روی گوشی، اعلان‌ها را روشن کنید.</p><div class="row tight"><button class="btn sm" data-a="notify">روشن‌کردن اعلان خبرها</button></div></section>';
+  var list=newsSorted();
+  if(!list.length)h+='<p class="empty-msg">'+(NEWS.fail?'دریافت خبرها انجام نشد. اینترنت را بررسی کنید.':NEWS.loading?'در حال دریافت…':'هنوز خبری منتشر نشده است.')+'</p>';
+  else h+=list.map(function(i){
+    var isNew=rd.indexOf(String(i.id))<0,lk=newsLink(i.link),dt=newsDate(i.date);
+    return '<article class="panel news'+(isNew?' fresh':'')+'"><div class="nh"><b>'+esc(i.title)+'</b>'+(isNew?'<span class="nnew">تازه</span>':'')+'</div>'+
+      (dt?'<div class="nd">'+dt+'</div>':'')+
+      (i.body?'<p class="nb">'+esc(i.body).replace(/\n/g,'<br>')+'</p>':'')+
+      (lk?'<a class="nl" href="'+esc(lk)+'" target="_blank" rel="noopener">'+esc(i.linkText||'بیشتر بخوانید')+'</a>':'')+'</article>';
+  }).join('');
+  if(NEWS.fail&&list.length)h+='<p class="note">اتصال برقرار نشد؛ آخرین خبرهای ذخیره‌شده نمایش داده شد.</p>';
+  markNewsRead();
+  return h;
+}
 function checkReminders(){
   var nowM=new Date().getHours()*60+new Date().getMinutes();
   var due=remList(0).filter(function(o){var t=String(o.e.rt||'09:00').split(':');return o.rj<today||(o.rj===today&&nowM>=(+t[0]*60+(+t[1]||0)))});if(!due.length)return;
@@ -514,7 +595,7 @@ function vSettings(){
   h+='<section class="panel"><p class="label">خروجی و پشتیبان</p><div class="row tight"><button class="btn sm" data-a="ics">خروجی برای تقویم گوشی (ICS)</button><button class="btn ghost sm" data-a="bk-export">پشتیبان یادداشت‌ها</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div>'+
     '<p class="note">فایل ICS مناسبت‌های دسته‌های روشن را برای پنج سال به‌صورت رویدادهای تمام‌روزه می‌سازد و با Google Calendar یا برنامهٔ تقویم گوشی باز می‌شود.</p></section>';
   if(installEv)h+='<section class="panel"><p class="label">نصب</p><button class="btn" data-a="install">نصب روی صفحهٔ اصلی</button></section>';
-  h+='<section class="panel about"><div class="logo"><img src="logo.png" alt="Lion and Sun – Architecture Studio"></div><p><b>تقویم شاهنشاهی</b> · نسخه B25</p><p>طراح و سازنده: <b>بابک محمدزاده</b></p><p>Architecture Studio Lion and Sun</p><p><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></p></section>';
+  h+='<section class="panel about"><div class="logo"><img src="logo.png" alt="Lion and Sun – Architecture Studio"></div><p><b>تقویم شاهنشاهی</b> · نسخه B26</p><p>طراح و سازنده: <b>بابک محمدزاده</b></p><p>Architecture Studio Lion and Sun</p><p><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></p></section>';
   h+='<section class="panel"><p class="label">منابع و سپاس</p><div class="credit">سال شاهنشاهی = سال هجری شمسی + ۱۱۸۰ (مبدأ: تاجگذاری کوروش بزرگ؛ رسمی از ۲۴ اسفند ۱۳۵۴ تا ۵ شهریور ۱۳۵۷).<br>'+
     'جدول سال‌های کبیسه ۱۳۰۴ تا ۱۴۹۸: مرکز تقویم مؤسسهٔ ژئوفیزیک دانشگاه تهران.<br>'+
     'جدول ماه‌های قمری ایران: داده‌های Qamari (روزبه پورنادر) و پروژهٔ تقویم فارسی.<br>'+
@@ -582,12 +663,13 @@ function footerBlock(){
   var bk=st.tab==='settings'?'':'<section class="panel bkp"><p class="label">پشتیبان‌گیری</p><p class="sm" style="margin:0 0 8px">یادداشت‌ها و تنظیمات شما فقط روی همین دستگاه ذخیره می‌شود؛ از آن‌ها پشتیبان بگیرید.</p><div class="row tight"><button class="btn sm" data-a="bk-export">ذخیرهٔ پشتیبان</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی از فایل<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div></section>';
   return bk+'<footer class="credit"><img src="logo.png" alt=""><div><b>طراح: بابک محمدزاده</b><span>Architecture Studio Lion and Sun</span><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></div></footer>';
 }
-var TABS=[['month','month','ماه'],['year','year','سال'],['events','star','رویدادها'],['tunnel','tunnel','تونل زمان'],['tools','tools','ابزار'],['settings','gear','تنظیمات']];
+var TABS=[['month','month','ماه'],['year','year','سال'],['events','star','رویدادها'],['tunnel','tunnel','تونل زمان'],['tools','tools','ابزار'],['settings','gear','تنظیمات'],['news','bell','خبرها']];
 function render(keepScroll){
   var y0=window.scrollY,v=$('#app');
-  var fn={month:vMonth,year:vYear,events:vEvents,tunnel:vTunnel,tools:vTools,settings:vSettings}[st.tab];
+  var fn={month:vMonth,year:vYear,events:vEvents,tunnel:vTunnel,tools:vTools,settings:vSettings,news:vNews}[st.tab];
   v.innerHTML='<div class="view">'+fn()+footerBlock()+'</div>';
-  $('#tabs').innerHTML=TABS.map(function(t){return '<button data-a="tab" data-t="'+t[0]+'" aria-current="'+(st.tab===t[0])+'">'+ic(t[1])+t[2]+'</button>'}).join('');
+  var nUn=newsUnreadCount();
+  $('#tabs').innerHTML=TABS.map(function(t){return '<button data-a="tab" data-t="'+t[0]+'" aria-current="'+(st.tab===t[0])+'">'+ic(t[1])+t[2]+(t[0]==='news'&&nUn?'<i class="nbadge" aria-label="خبر تازه"></i>':'')+'</button>'}).join('');
   st.dir='';
   clearInterval(timer);
   if(st.tab==='tools'&&st.tools==='astro'){tickCountdown();timer=setInterval(tickCountdown,1000)}
@@ -660,6 +742,7 @@ function act(a,el,ev){
       var names=d.v==='g'?GM:PM,sel=$('#pm'),cur=sel.value;sel.innerHTML=names.map(function(n,i){return '<option value="'+(i+1)+'"'+(String(i+1)===cur?' selected':'')+'>'+n+'</option>'}).join('');break}
     case 'p-save':savePersonalFromSheet(d.id);break;
     case 'p-del':Ev.removePersonal(d.id);closeSheet();toast('حذف شد.');break;
+    case 'news-refresh':fetchNews(true);break;
     case 'notify':askNotify();toast(window.Notification?(Notification.permission==='granted'?'اعلان‌ها روشن است.':'اجازهٔ اعلان را در پنجرهٔ مرورگر بدهید.'):'این مرورگر اعلان را پشتیبانی نمی‌کند.');render(true);break;
     case 'ics-rem':{
       var t2=Ev.buildICS(tp.y-1,tp.y+5,{personal:true},function(j){return impStr(j)+' · '+shStr(j)});
@@ -729,18 +812,23 @@ document.addEventListener('keydown',function(e){
 });
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installEv=e;if(st.tab==='settings')render(true)});
 document.addEventListener('visibilitychange',function(){
-  if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}if(!sheetOpen)render(true)}
+  if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}if(!sheetOpen)render(true);fetchNews()}
 });
 
 /* ====================== boot ====================== */
 applyTheme();
+if(/[?&]tab=news(&|$)/.test(location.search))st.tab='news';
 render();
 (function(){var sp=$('#splash');if(!sp)return;
   var seen=false;try{seen=sessionStorage.getItem('tq-splash')==='1';sessionStorage.setItem('tq-splash','1')}catch(e){}
   function hide(){sp.classList.add('out');setTimeout(function(){sp.remove()},600)}
   if(seen)sp.remove();else{setTimeout(hide,1700);sp.addEventListener('click',hide)}
 })();
-if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+if('serviceWorker' in navigator&&location.protocol!=='file:'){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+  navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='open-news'){st.tab='news';if(!sheetOpen)render();window.scrollTo(0,0);fetchNews()}});
+}
 setTimeout(checkReminders,2200);setInterval(function(){if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}checkReminders()}},60000);
+setTimeout(function(){fetchNews();registerBgNews()},1500);setInterval(function(){if(!document.hidden)fetchNews()},300000);
 window.__tq={Cal:Cal,Ev:Ev,Astro:Astro,S:S,st:st};
 })();
