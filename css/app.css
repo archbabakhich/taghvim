@@ -240,3 +240,7 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .royal .rt{padding:6px 0;border-bottom:1px solid var(--line)}.royal .rt:last-child{border-bottom:0}
 .royal .rt b{display:block;color:var(--accent)}.royal .rt small{color:var(--ink-2)}
 section.royal{border-inline-start:4px solid var(--c-royal)}
+
+.hero .tclock{font-size:13.5px;margin:2px 0 4px;opacity:.95}
+.hero .tclock b{font-variant-numeric:tabular-nums;font-size:16px;letter-spacing:.5px}
+.hero .tclock small{display:block;opacity:.85;font-size:11.5px;line-height:1.6}

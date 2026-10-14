@@ -128,10 +128,35 @@ function weekHeader(){
 }
 function firstOffset(j){return (Cal.weekday(j)-S.weekStart+7)%7}
 
+/* ---------- Iran clock (Asia/Tehran, rules from the device's IANA tz database) ---------- */
+var TZF=null;
+try{TZF=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})}catch(e){}
+function tehranNow(ms){
+  var off=210,y,mo,d,h,mi,sc;
+  if(TZF){
+    var o={};TZF.formatToParts(new Date(ms)).forEach(function(x){o[x.type]=+x.value});
+    y=o.year;mo=o.month;d=o.day;h=o.hour%24;mi=o.minute;sc=o.second;
+    off=Math.round((Date.UTC(y,mo-1,d,h,mi,sc)-Math.floor(ms/1000)*1000)/60000);
+  }else{var t=new Date(ms+210*60000);h=t.getUTCHours();mi=t.getUTCMinutes();sc=t.getUTCSeconds()}
+  return {h:h,m:mi,s:sc,off:off};
+}
+function two(n){return (n<10?'0':'')+n}
+function offStr(o){var a=Math.abs(o);return (o<0?'-':'+')+two(Math.floor(a/60))+':'+two(a%60)}
+function clockHTML(){
+  var ms=Date.now(),t=tehranNow(ms),loc=-new Date(ms).getTimezoneOffset();
+  var s=num(two(t.h)+':'+two(t.m)+':'+two(t.s));
+  var offTxt=t.off===210?'ساعت رسمی ایران':'ساعت تابستانی ایران';
+  var l=loc!==t.off?' · ساعت دستگاه شما '+num(two(new Date(ms).getHours())+':'+two(new Date(ms).getMinutes())):'';
+  return '<span class="tl">ساعت ایران</span> <b dir="ltr">'+s+'</b><small>'+offTxt+' ('+num('UTC'+offStr(t.off))+')'+l+'</small>';
+}
+function tickClock(){var e=document.getElementById('tclock');if(e)e.innerHTML=clockHTML()}
+setInterval(tickClock,1000);
+
 function hero(){
   var p=tp,ms=Date.now(),mo=Astro.moonState(ms);
   var h='<section class="hero" aria-label="امروز"><div class="eyebrow">امروز · '+wdName(today)+(isHol(today)?' · روز تعطیل':'')+'</div>'+
     '<div class="big">'+num(p.d)+' '+PM[p.m-1]+' '+num(impY(p.y))+'</div>'+
+    '<div class="tclock" id="tclock">'+clockHTML()+'</div>'+
     '<div class="lines"><span>'+shStr(today)+'</span><span>'+gStr(today)+'</span>'+(S.showHijri?'<span>'+hStr(today)+'</span>':'')+'</div>';
   if(S.showMoon)h+='<div class="moon" title="'+moonName(mo.frac)+'">'+moonSVG(mo.frac,34)+'</div>';
   var nextSpring={py:p.y+1},days=Math.max(0,Cal.pYearStart(p.y+1)-today);
