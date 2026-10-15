@@ -18,6 +18,7 @@ var ICON={
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   prev:'<path d="M9 6l6 6-6 6"/>',next:'<path d="M15 6l-6 6 6 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',
   share:'<path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
   bell:'<path d="M6 16v-5a6 6 0 1112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/>',
   refresh:'<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>'
 };
@@ -457,6 +458,106 @@ function checkReminders(){
   }}catch(e){}
 }
 
+/* ---------- appointments (قرارها) ---------- */
+var AKEY='taghvim-appts-v1',appts=[];
+var REMS=[[60,'۱ ساعت قبل'],[1440,'۱ روز قبل'],[2880,'۲ روز قبل']];
+function loadAppts(){try{var r=localStorage.getItem(AKEY);appts=r?JSON.parse(r):[];if(!Array.isArray(appts))appts=[]}catch(e){appts=[]}}
+function saveAppts(){try{localStorage.setItem(AKEY,JSON.stringify(appts))}catch(e){}}
+loadAppts();
+function apStart(a){var g=Cal.j2g(a.j),t=String(a.tm||'09:00').split(':');return new Date(g.y,g.m-1,g.d,+t[0]||0,+t[1]||0).getTime()}
+function apSorted(){return appts.slice().sort(function(a,b){return apStart(a)-apStart(b)})}
+function apRemText(a){return (a.rm&&a.rm.length?REMS.filter(function(r){return a.rm.indexOf(r[0])>=0}).map(function(r){return r[1]}).join('، '):'بدون یادآوری')}
+function apRow(a){
+  var p=pd(a.j),past=apStart(a)<Date.now();
+  return '<div class="ev"><i class="bar-c personal"></i><div class="d"><b>'+num(p.d)+'</b><span>'+PM[p.m-1]+'</span></div><div class="t"><div class="ti">'+esc(a.t)+(past?'':(a.j===today?'<span class="tag hol">امروز</span>':''))+'</div>'+
+    '<small>'+wdName(a.j)+' · ساعت '+hhmm(+String(a.tm).split(':')[0],+String(a.tm).split(':')[1])+' · '+relText(a.j)+'</small>'+
+    '<small>'+impStr(a.j)+'</small><small>'+gStr(a.j)+'</small>'+
+    (a.loc?'<small>مکان: '+esc(a.loc)+'</small>':'')+(a.note?'<small>'+esc(a.note)+'</small>':'')+
+    '<small>یادآوری: '+apRemText(a)+'</small>'+
+    '<div class="row tight" style="margin:6px 0 0"><button class="btn ghost sm" data-a="ap-edit" data-id="'+esc(a.id)+'">ویرایش</button><button class="btn ghost sm" data-a="ap-ics" data-id="'+esc(a.id)+'">افزودن به تقویم گوشی</button></div></div></div>';
+}
+function vAppts(){
+  var now=Date.now(),all=apSorted(),up=all.filter(function(a){return apStart(a)>=now-3600000}),past=all.filter(function(a){return apStart(a)<now-3600000}).reverse();
+  var h='<div class="bar"><div><h2>قرارها</h2><div class="sub">قرار ملاقات با یادآوری ۱ ساعت، ۱ روز و ۲ روز قبل</div></div></div>';
+  h+='<div class="row"><button class="btn" data-a="ap-add">افزودن قرار</button></div>';
+  if(!up.length)h+='<p class="empty-msg">قراری ثبت نشده است. با «افزودن قرار» عنوان، تاریخ (شاهنشاهی یا میلادی) و ساعت را بنویسید.</p>';
+  else h+='<section class="panel">'+up.map(apRow).join('')+'</section>';
+  if(past.length)h+='<section class="panel"><p class="label">گذشته</p>'+past.slice(0,10).map(apRow).join('')+'</section>';
+  var granted=window.Notification&&Notification.permission==='granted';
+  h+='<section class="panel"><p class="label">اعلان و تقویم گوشی</p><p class="note" style="margin-top:0">با باز بودن برنامه (یا هر بار که آن را باز می‌کنید) یادآوری‌ها اعلان می‌شوند. مرورگر به برنامه‌های وب اجازهٔ زنگ زدن در زمانی که برنامه کاملاً بسته است را نمی‌دهد؛ برای یادآوری مطمئن، با «افزودن به تقویم گوشی» قرار را همراه زنگ‌هایش در Google Calendar یا تقویم گوشی ثبت کنید.</p><div class="row tight"><button class="btn sm" data-a="notify">'+(granted?'اعلان‌ها روشن است':'روشن‌کردن اعلان‌ها')+'</button>'+(all.length?'<button class="btn ghost sm" data-a="ap-ics-all">همهٔ قرارها در تقویم گوشی</button>':'')+'</div></section>';
+  return h;
+}
+function apSheet(a,j0){
+  var cal=(a&&a.cal)||'imp',j=a?a.j:(j0||today),v=jToCal(j,cal==='g'?'g':'imp'),names=cal==='g'?GM:PM,tm=a?a.tm:'10:00',rm=a?a.rm:[60,1440];
+  st.acal=cal;
+  var h='<h3>'+(a?'ویرایش قرار':'قرار تازه')+'</h3>'+
+    '<div class="row"><input type="text" id="at" placeholder="عنوان قرار (مثلاً ملاقات با مهندس)" value="'+esc(a?a.t:'')+'" aria-label="عنوان" maxlength="120"></div>'+
+    '<p class="label">تاریخ</p><div class="seg" role="group"><button data-a="a-cal" data-v="imp" aria-pressed="'+(cal!=='g')+'">شاهنشاهی</button><button data-a="a-cal" data-v="g" aria-pressed="'+(cal==='g')+'">میلادی</button></div>'+
+    '<div class="row"><input type="number" inputmode="numeric" id="ay" value="'+v.y+'" aria-label="سال" style="max-width:96px"><select id="am" aria-label="ماه">'+names.map(function(n,i){return '<option value="'+(i+1)+'"'+(i+1===v.m?' selected':'')+'>'+n+'</option>'}).join('')+'</select><input type="number" inputmode="numeric" id="ad" value="'+v.d+'" min="1" max="31" aria-label="روز" style="max-width:76px"></div>'+
+    '<p class="label">ساعت</p><div class="row"><input type="time" id="atm" value="'+esc(tm)+'" aria-label="ساعت قرار" style="max-width:140px"></div>'+
+    '<p class="label">یادآوری</p>'+REMS.map(function(r){return '<label class="switch"><span>'+r[1]+'</span><input type="checkbox" class="arm" value="'+r[0]+'" '+(rm.indexOf(r[0])>=0?'checked':'')+'></label>'}).join('')+
+    '<div class="row"><input type="text" id="al" placeholder="مکان (اختیاری)" value="'+esc(a&&a.loc?a.loc:'')+'" aria-label="مکان" maxlength="120"></div>'+
+    '<div class="row"><textarea id="an" placeholder="توضیح (اختیاری)" aria-label="توضیح">'+esc(a&&a.note?a.note:'')+'</textarea></div>'+
+    '<div class="row tight"><button class="btn" data-a="ap-save" data-id="'+(a?esc(a.id):'')+'">ذخیره</button>'+(a?'<button class="btn danger" data-a="ap-del" data-id="'+esc(a.id)+'">حذف</button>':'')+'<button class="btn ghost" data-a="close">انصراف</button></div>';
+  openSheet(h);
+}
+function apSwitchCal(nc){
+  var oc=st.acal||'imp',y=parseInt($('#ay').value,10),m=+$('#am').value,d=+$('#ad').value,ocal=oc==='g'?'g':'imp',ncal=nc==='g'?'g':'imp';
+  st.acal=nc;
+  var seg=document.querySelectorAll('[data-a="a-cal"]');seg.forEach(function(b){b.setAttribute('aria-pressed',b.dataset.v===nc)});
+  var v=validCal(ocal,y,m,d)?jToCal(calToJ(ocal,y,m,d),ncal):null;
+  var names=nc==='g'?GM:PM;
+  $('#am').innerHTML=names.map(function(n,i){return '<option value="'+(i+1)+'">'+n+'</option>'}).join('');
+  if(v){$('#ay').value=v.y;$('#am').value=v.m;$('#ad').value=v.d}
+}
+function apSave(id){
+  var t=$('#at').value.trim();if(!t){toast('عنوان را بنویسید.');return}
+  var cal=st.acal==='g'?'g':'imp',y=parseInt($('#ay').value,10),m=+$('#am').value,d=+$('#ad').value;
+  if(!validCal(cal,y,m,d)){toast('این تاریخ وجود ندارد.');return}
+  var tm=$('#atm').value;if(!tm){toast('ساعت را بنویسید.');return}
+  var rm=[];document.querySelectorAll('.arm').forEach(function(c){if(c.checked)rm.push(+c.value)});
+  var o={t:t,j:calToJ(cal,y,m,d),tm:tm,cal:cal,rm:rm,loc:$('#al').value.trim(),note:$('#an').value.trim(),ct:Date.now()};
+  if(id){for(var i=0;i<appts.length;i++)if(appts[i].id===id){o.id=id;appts[i]=o}}
+  else{o.id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);appts.push(o)}
+  saveAppts();
+  if(rm.length)askNotify();
+  closeSheet();toast('قرار ذخیره شد.');setTimeout(checkAppts,300);
+}
+function icsEsc(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n')}
+function icsLocal(ms){var d=new Date(ms),p=function(n){return (n<10?'0':'')+n};return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'T'+p(d.getHours())+p(d.getMinutes())+'00'}
+function apICS(list){
+  var L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Taghvim Shahanshahi//FA','CALSCALE:GREGORIAN','METHOD:PUBLISH'],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  list.forEach(function(a){
+    var s=apStart(a);
+    L.push('BEGIN:VEVENT','UID:'+a.id+'@taghvim','DTSTAMP:'+stamp,'DTSTART:'+icsLocal(s),'DTEND:'+icsLocal(s+3600000),'SUMMARY:'+icsEsc(a.t),
+      'DESCRIPTION:'+icsEsc(impStr(a.j)+' · '+gStr(a.j)+(a.note?'\n'+a.note:'')));
+    if(a.loc)L.push('LOCATION:'+icsEsc(a.loc));
+    (a.rm||[]).forEach(function(m){L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(a.t),'TRIGGER:-PT'+m+'M','END:VALARM')});
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');return L.join('\r\n');
+}
+function checkAppts(){
+  var now=Date.now(),seen={};try{seen=JSON.parse(localStorage.getItem('taghvim-ap-notified')||'{}')}catch(e){}
+  var fire=[],ch=false;
+  appts.forEach(function(a){var s=apStart(a);(a.rm||[]).forEach(function(m){
+    var k=a.id+':'+s+':'+m,tr=s-m*60000;
+    if(now>=tr&&now<s&&!seen[k]){seen[k]=1;ch=true;if(tr>=(a.ct||0))fire.push({a:a,m:m,s:s})}
+  })});
+  if(!ch)return;
+  Object.keys(seen).forEach(function(k){var s=+k.split(':')[1];if(s<now-864e5*3)delete seen[k]});
+  try{localStorage.setItem('taghvim-ap-notified',JSON.stringify(seen))}catch(e){}
+  if(!fire.length)return;
+  fire.sort(function(x,y){return x.s-y.s});
+  var msg=fire.map(function(f){var left=Math.max(1,Math.round((f.s-now)/60000)),w=left>=1440?num(Math.round(left/1440))+' روز دیگر':(left>=60?num(Math.round(left/60))+' ساعت دیگر':num(left)+' دقیقه دیگر');return f.a.t+' — '+w+' (ساعت '+String(f.a.tm).replace(/\d/g,function(c){return num(+c)})+')'}).join('\n');
+  toast('قرار: '+fire[0].a.t+(fire.length>1?' و '+num(fire.length-1)+' مورد دیگر':''));
+  try{if(window.Notification&&Notification.permission==='granted'){
+    if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(function(r){r.showNotification('قرار ملاقات',{body:msg,icon:'icons/icon-192.png',tag:'taghvim-ap-'+now,lang:'fa',dir:'rtl'})});
+    else new Notification('قرار ملاقات',{body:msg});
+  }}catch(e){}
+  if(st.tab==='appts'&&!sheetOpen)render(true);
+}
+
 /* ---------- time tunnel ---------- */
 var ERAS={all:['همهٔ دوران','۲۴۷۹–۲۵۳۷'],r:['رضاشاه بزرگ','۲۴۷۹–۲۵۰۰'],m:['محمدرضاشاه','۲۵۰۰–۲۵۳۷']};
 function vTunnel(){
@@ -663,10 +764,10 @@ function footerBlock(){
   var bk=st.tab==='settings'?'':'<section class="panel bkp"><p class="label">پشتیبان‌گیری</p><p class="sm" style="margin:0 0 8px">یادداشت‌ها و تنظیمات شما فقط روی همین دستگاه ذخیره می‌شود؛ از آن‌ها پشتیبان بگیرید.</p><div class="row tight"><button class="btn sm" data-a="bk-export">ذخیرهٔ پشتیبان</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی از فایل<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div></section>';
   return bk+'<footer class="credit"><img src="logo.png" alt=""><div><b>طراح: بابک محمدزاده</b><span>Architecture Studio Lion and Sun</span><a class="site" href="https://www.lion-sun.de" target="_blank" rel="noopener">www.lion-sun.de</a></div></footer>';
 }
-var TABS=[['month','month','ماه'],['year','year','سال'],['events','star','رویدادها'],['tunnel','tunnel','تونل زمان'],['tools','tools','ابزار'],['settings','gear','تنظیمات'],['news','bell','خبرها']];
+var TABS=[['month','month','ماه'],['year','year','سال'],['events','star','رویدادها'],['appts','clock','قرارها'],['tunnel','tunnel','تونل زمان'],['tools','tools','ابزار'],['settings','gear','تنظیمات'],['news','bell','خبرها']];
 function render(keepScroll){
   var y0=window.scrollY,v=$('#app');
-  var fn={month:vMonth,year:vYear,events:vEvents,tunnel:vTunnel,tools:vTools,settings:vSettings,news:vNews}[st.tab];
+  var fn={month:vMonth,year:vYear,events:vEvents,appts:vAppts,tunnel:vTunnel,tools:vTools,settings:vSettings,news:vNews}[st.tab];
   v.innerHTML='<div class="view">'+fn()+footerBlock()+'</div>';
   var nUn=newsUnreadCount();
   $('#tabs').innerHTML=TABS.map(function(t){return '<button data-a="tab" data-t="'+t[0]+'" aria-current="'+(st.tab===t[0])+'">'+ic(t[1])+t[2]+(t[0]==='news'&&nUn?'<i class="nbadge" aria-label="خبر تازه"></i>':'')+'</button>'}).join('');
@@ -698,6 +799,13 @@ function shareText(j){
 function act(a,el,ev){
   var d=el?el.dataset:{};
   switch(a){
+    case 'ap-add':apSheet(null,st.sel||today);break;
+    case 'ap-edit':{var ap1=appts.filter(function(x){return x.id===d.id})[0];if(ap1)apSheet(ap1);break}
+    case 'ap-save':apSave(d.id);break;
+    case 'ap-del':appts=appts.filter(function(x){return x.id!==d.id});saveAppts();closeSheet();toast('حذف شد.');break;
+    case 'a-cal':apSwitchCal(d.v);break;
+    case 'ap-ics':{var ap2=appts.filter(function(x){return x.id===d.id});if(ap2.length)download('qarar.ics',apICS(ap2),'text/calendar');break}
+    case 'ap-ics-all':download('taghvim-appointments.ics',apICS(apSorted()),'text/calendar');break
     case 'tab':st.tab=d.t;render();window.scrollTo(0,0);break;
     case 'prevm':shiftMonth(-1);break;
     case 'next':shiftMonth(1);break;
@@ -750,7 +858,7 @@ function act(a,el,ev){
     case 'ics':{
       var txt=Ev.buildICS(tp.y-1,tp.y+3,S.cats,function(j){return impStr(j)+' · '+shStr(j)});
       download('taghvim-shahanshahi.ics',txt,'text/calendar');break}
-    case 'bk-export':download('taghvim-backup-'+today+'.json',JSON.stringify({v:1,settings:S,personal:Ev.listPersonal(),done:Ev.getDone()}),'application/json');break;
+    case 'bk-export':download('taghvim-backup-'+today+'.json',JSON.stringify({v:1,settings:S,personal:Ev.listPersonal(),appts:appts,done:Ev.getDone()}),'application/json');break;
   }
 }
 function savePersonalFromSheet(id){
@@ -789,7 +897,7 @@ document.addEventListener('change',function(ev){
   else if(el.id==='bk-file'){
     var f=el.files&&el.files[0];if(!f)return;
     var r=new FileReader();r.onload=function(){
-      try{var o=JSON.parse(r.result);if(o.personal)Ev.replacePersonal(o.personal);if(o.done)Ev.putDone(o.done);
+      try{var o=JSON.parse(r.result);if(o.personal)Ev.replacePersonal(o.personal);if(Array.isArray(o.appts)){appts=o.appts.filter(function(x){return x&&x.t&&x.j&&x.id});saveAppts()}if(o.done)Ev.putDone(o.done);
         if(o.settings){for(var k in o.settings){if(k==='cats'){for(var c in o.settings.cats)S.cats[c]=!!o.settings.cats[c]}else S[k]=o.settings[k]}saveS();applyTheme()}
         render();toast('بازیابی شد.')}catch(e){toast('فایل پشتیبان معتبر نیست.')}
     };r.readAsText(f);
@@ -828,7 +936,7 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
   window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
   navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='open-news'){st.tab='news';if(!sheetOpen)render();window.scrollTo(0,0);fetchNews()}});
 }
-setTimeout(checkReminders,2200);setInterval(function(){if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}checkReminders()}},60000);
+loadAppts();setTimeout(function(){checkReminders();checkAppts()},2200);setInterval(function(){if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}checkReminders();checkAppts()}},60000);
 setTimeout(function(){fetchNews();registerBgNews()},1500);setInterval(function(){if(!document.hidden)fetchNews()},300000);
 window.__tq={Cal:Cal,Ev:Ev,Astro:Astro,S:S,st:st};
 })();
