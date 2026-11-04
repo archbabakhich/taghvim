@@ -210,6 +210,7 @@ function vMonth(){
   /* legend */
   var used={};for(var d2=0;d2<len;d2++)evs(first+d2).forEach(function(e){used[e.k]=1});
   h+='<div class="legend">'+Ev.CAT_ORDER.filter(function(k){return used[k]}).map(function(k){return '<span><i class="dot '+k+'"></i>'+Ev.CATS[k].n+'</span>'}).join('')+'<span style="color:var(--red)">● جمعه و تعطیل</span></div>';
+  h+=todayPanel();
   h+=royalPanel();
   h+=sagePanel(today);
   /* month events */
@@ -360,10 +361,17 @@ function sagePanel(j,onlyMatch){
 }
 
 /* ---------- Pahlavi dynasty births / deaths under the calendar ---------- */
+function todayPanel(){
+  var list=evs(today);if(!list.length)return '';
+  var p=pd(today);
+  return '<section class="panel today-ev"><div class="label">امروز '+num(p.d)+' '+PM[p.m-1]+(isHol(today)?' · روز تعطیل':'')+'</div>'+
+    list.map(function(e){return evRow(today,e,{noDate:1,py:p.y})}).join('')+'</section>';
+}
 function royalPanel(){
   var list=evs(today).filter(function(e){return e.k==='royal'||e.k==='kings'});
   var py=pd(today).y,h='';
-  if(list.length){
+  if(list.length)return '';
+  if(false){
     h+='<section class="panel royal"><div class="label">امروز در تقویم خاندان پهلوی و شاه ایران</div>'+list.map(function(e){
       var on=originNote(e,py);
       return '<div class="rt"><b>'+esc(e.t)+'</b>'+(on?'<small>'+on+'</small>':'')+'</div>';
