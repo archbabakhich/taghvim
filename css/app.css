@@ -257,3 +257,9 @@ section.royal{border-inline-start:4px solid var(--c-royal)}
 .site{direction:ltr;color:var(--accent);font-weight:700;text-decoration:none;font-size:12.5px}
 .credit .site{display:inline-block;margin-top:4px;padding:10px 14px;border:1.5px solid var(--accent);border-radius:99px;align-self:flex-start;-webkit-tap-highlight-color:transparent}
 .panel.about .site{display:inline-block;padding:10px 14px;border:1.5px solid var(--accent);border-radius:99px}
+
+/* ---------- Nowruz background (haft-sin painting) ---------- */
+html.nowruz body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(var(--bg) 0,transparent 18%,transparent 70%,var(--bg) 100%),url(../img/nowruz.jpg) center top/cover no-repeat;opacity:.30}
+html.nowruz body::before{opacity:.05}
+:root[data-theme="dark"].nowruz body::after{opacity:.16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]).nowruz body::after{opacity:.16}}

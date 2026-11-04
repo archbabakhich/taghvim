@@ -30,7 +30,14 @@ var S={theme:'auto',digits:'fa',weekStart:0,showG:1,showMoon:1,showHijri:0,tz:'d
 Ev.CAT_ORDER.forEach(function(k){S.cats[k]=!!Ev.CATS[k].on});
 try{var raw=localStorage.getItem(SKEY);if(raw){var o=JSON.parse(raw);for(var k in o){if(k==='cats'){for(var c in o.cats)S.cats[c]=!!o.cats[c]}else S[k]=o[k]}}}catch(e){}
 function saveS(){try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}}
-function applyTheme(){var r=document.documentElement;if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme)}
+/* Nowruz background: automatic from 25 Esfand to 13 Farvardin (or ?nowruz=1 to preview) */
+function nowruzOn(){
+  if(/[?&]nowruz=1(&|$)/.test(location.search))return true;
+  if(S.nowruzBg===0)return false;
+  var p=Cal.j2p(Cal.todayJ());return (p.m===12&&p.d>=25)||(p.m===1&&p.d<=13);
+}
+function applyNowruz(){document.documentElement.classList.toggle('nowruz',nowruzOn())}
+function applyTheme(){applyNowruz();var r=document.documentElement;if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme)}
 
 /* ====================== formatting ====================== */
 var FA='۰۱۲۳۴۵۶۷۸۹';
@@ -749,7 +756,7 @@ function vSettings(){
     '<p class="label" style="margin-top:14px">ارقام</p><div class="seg" role="group"><button data-a="digits" data-v="fa" aria-pressed="'+(S.digits==='fa')+'">فارسی ۱۲۳</button><button data-a="digits" data-v="lat" aria-pressed="'+(S.digits==='lat')+'">لاتین 123</button></div>'+
     '<p class="label" style="margin-top:14px">آغاز هفته</p><div class="seg" role="group"><button data-a="wstart" data-v="0" aria-pressed="'+(S.weekStart===0)+'">شنبه</button><button data-a="wstart" data-v="1" aria-pressed="'+(S.weekStart===1)+'">یکشنبه</button><button data-a="wstart" data-v="2" aria-pressed="'+(S.weekStart===2)+'">دوشنبه</button></div>'+
     '<p class="label" style="margin-top:14px">منطقهٔ زمانی فازهای ماه</p><div class="seg" role="group"><button data-a="tz" data-v="device" aria-pressed="'+(S.tz==='device')+'">ساعت دستگاه</button><button data-a="tz" data-v="tehran" aria-pressed="'+(S.tz==='tehran')+'">وقت تهران</button></div>'+
-    '<div style="margin-top:8px">'+sw('showG','نمایش تاریخ میلادی در خانه‌ها',S.showG)+sw('showMoon','نمایش ماه و فازها',S.showMoon)+sw('showHijri','نمایش تاریخ قمری در بالای صفحه',S.showHijri)+'</div></section>';
+    '<div style="margin-top:8px">'+sw('showG','نمایش تاریخ میلادی در خانه‌ها',S.showG)+sw('showMoon','نمایش ماه و فازها',S.showMoon)+sw('showHijri','نمایش تاریخ قمری در بالای صفحه',S.showHijri)+sw('nowruzBg','پس‌زمینهٔ نوروزی (از ۲۵ اسفند تا ۱۳ فروردین)',S.nowruzBg!==0)+'</div></section>';
   h+='<section class="panel"><p class="label">دسته‌های مناسبت</p><div class="chips">'+Ev.CAT_ORDER.map(function(k){return '<button class="chip" data-a="cat" data-k="'+k+'" aria-pressed="'+!!S.cats[k]+'"><i class="dot '+k+'"></i>'+Ev.CATS[k].n+'</button>'}).join('')+'</div>'+
     '<p class="note">مناسبت‌های مربوط به پس از ۱۳۵۷ در این برنامه نیست. دسته‌های «مذهبی (قمری)» و «جهانی» به‌صورت پیش‌فرض خاموش‌اند.</p></section>';
   h+='<section class="panel"><p class="label">خروجی و پشتیبان</p><div class="row tight"><button class="btn sm" data-a="ics">خروجی برای تقویم گوشی (ICS)</button><button class="btn ghost sm" data-a="bk-export">پشتیبان یادداشت‌ها</button><label class="btn ghost sm" for="bk-file" style="display:inline-flex;align-items:center">بازیابی<input type="file" id="bk-file" accept=".json,application/json" hidden></label></div>'+
@@ -899,7 +906,7 @@ function act(a,el,ev){
     case 'digits':S.digits=d.v;saveS();render(true);break;
     case 'wstart':S.weekStart=+d.v;saveS();render(true);break;
     case 'tz':S.tz=d.v;saveS();render(true);break;
-    case 'set':S[d.k]=el.checked?1:0;saveS();Ev.clearCache();render(true);break;
+    case 'set':S[d.k]=el.checked?1:0;saveS();if(d.k==='nowruzBg')applyNowruz();Ev.clearCache();render(true);break;
     case 'install':if(installEv){installEv.prompt();installEv=null;render(true)}break;
     case 'share-day':shareText(+d.j);break;
     case 'add-p':personalSheet({j:d.j?+d.j:(st.sel||today),task:!!d.task});break;
@@ -979,7 +986,7 @@ document.addEventListener('keydown',function(e){
 });
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installEv=e;if(st.tab==='settings')render(true)});
 document.addEventListener('visibilitychange',function(){
-  if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}if(!sheetOpen)render(true);fetchNews()}
+  if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today);applyNowruz()}if(!sheetOpen)render(true);fetchNews()}
 });
 
 /* ====================== boot ====================== */
@@ -995,7 +1002,7 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
   window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
   navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='open-news'){st.tab='news';if(!sheetOpen)render();window.scrollTo(0,0);fetchNews()}});
 }
-loadAppts();setTimeout(function(){checkReminders();checkAppts()},2200);setInterval(function(){if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today)}checkReminders();checkAppts()}},60000);
+loadAppts();setTimeout(function(){checkReminders();checkAppts()},2200);setInterval(function(){if(!document.hidden){var nt=Cal.todayJ();if(nt!==today){today=nt;tp=Cal.j2p(today);applyNowruz()}checkReminders();checkAppts()}},60000);
 setTimeout(function(){fetchNews();registerBgNews()},1500);setInterval(function(){if(!document.hidden)fetchNews()},300000);
 window.__tq={Cal:Cal,Ev:Ev,Astro:Astro,S:S,st:st};
 })();
