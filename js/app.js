@@ -115,7 +115,7 @@ function evRow(j,e,opt){
   var del=(e.k==='personal'&&e.id)?' <button class="btn ghost sm" data-a="edit-p" data-id="'+esc(e.id)+'" data-j="'+j+'">ویرایش</button>':'';
   var tk=(e.k==='personal'&&e.task)?chkBtn(e.id,j):'';
   return '<div class="ev"><i class="bar-c '+e.k+'"></i>'+left+'<div class="t"><div class="ti">'+tk+esc(e.t)+(e.h?'<span class="tag hol">تعطیل</span>':'')+'</div>'+
-    ((on||e.note||!opt.noCat)?'<small>'+(opt.noCat?'':esc(Ev.CATS[e.k].n)+(on?' · ':''))+on+(e.note?(on||!opt.noCat?' · ':'')+esc(e.note):'')+'</small>':'')+rel+del+'</div></div>';
+    ((on||e.note||!opt.noCat)?'<small>'+(opt.noCat?'':esc(Ev.CATS[e.k].n)+(on?' · ':''))+on+(e.note?(on||!opt.noCat?' · ':'')+esc(e.note):'')+'</small>':'')+(opt.extra?'<small>'+opt.extra+'</small>':'')+rel+del+'</div></div>';
 }
 function relText(j){
   var d=j-today;
@@ -236,7 +236,7 @@ function vEvents(){
   h+='<div class="panel"><div class="seg" role="group"><button data-a="ev-mode" data-v="upcoming" aria-pressed="'+(st.evMode==='upcoming')+'">پیش رو</button><button data-a="ev-mode" data-v="year" aria-pressed="'+(st.evMode==='year')+'">همهٔ سال</button><button data-a="ev-mode" data-v="rem" aria-pressed="'+(st.evMode==='rem')+'">یادآوری‌ها</button><button data-a="ev-mode" data-v="task" aria-pressed="'+(st.evMode==='task')+'">کارها</button></div>';
   if(st.evMode==='rem')return h+'</div>'+remView();
   if(st.evMode==='task')return h+'</div>'+taskView();
-  h+='<div class="row"><input type="search" id="q" placeholder="جستجو در مناسبت‌ها…" value="'+esc(st.q)+'" aria-label="جستجو"></div>';
+  h+='<div class="row"><input type="search" id="q" placeholder="بپرسید: تولد شهبانو کی است؟" value="'+esc(st.q)+'" aria-label="جستجو"></div>';
   h+='<div class="chips">'+Ev.CAT_ORDER.map(function(k){return '<button class="chip" data-a="cat" data-k="'+k+'" aria-pressed="'+!!S.cats[k]+'"><i class="dot '+k+'"></i>'+Ev.CATS[k].n+'</button>'}).join('')+'</div></div>';
   if(st.evMode==='year'){
     h+='<div class="row tight"><button class="ib" data-a="ev-year" data-v="-1" aria-label="سال قبل">'+ic('prev')+'</button><div class="big-num" style="flex:1;text-align:center">'+num(impY(st.evYear))+' <span class="sm">شاهنشاهی · '+num(st.evYear)+' شمسی</span></div><button class="ib" data-a="ev-year" data-v="1" aria-label="سال بعد">'+ic('next')+'</button></div>';
@@ -245,7 +245,66 @@ function vEvents(){
   return h;
 }
 function norm(s){return String(s).replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/[‌‏]/g,' ').toLowerCase()}
+
+/* ---------- Persian question search (no AI, works offline) ---------- */
+var QA_STOP=('کی|کیه|کجا|چه|چی|چند|است|هست|هستش|بود|بوده|روز|روزی|تاریخ|تاریخی|تاریخش|کدام|رو|را|از|در|به|برای|من|بگو|بگویید|بگید|بده|بدهید|لطفا|لطفاً|میشه|می‌شود|چیست|چیه|مناسبت|مناسبتی|دارد|داره|دارند|با|و|یا|آیا|های|ها|چه‌روزی|کی‌است|تقویم|بگذار|ببین|نشان|نمایش|بیاب|پیدا|کن|کنید|امسال').split('|');
+var QA_SYN=[
+  [/^(تولد|متولد|زادروز|زاده|زایش|زادگاه|دنیا)/,['زادروز']],
+  [/^(فوت|درگذشت|مرگ|وفات|مرد)/,['درگذشت','شهادت']],
+  [/^(شهادت|کشته|جانباخت|جان‌باخت)/,['شهادت']],
+  [/^(شهبانو|ملکه‌فرح)/,['شهبانو']],
+  [/^(شاه|شاهنشاه|محمدرضا|محمدرضاشاه)$/,['آریامهر']],
+  [/^(ولیعهد|ولی‌عهد)/,['ولیعهد']],
+  [/^(تاجگذاری|تاج‌گذاری)/,['تاجگذاری']],
+  [/^(سیزده|سیزدهبدر|سیزده‌بدر)/,['سیزده']]
+];
+var QA_PM=['فروردین','اردیبهشت','خرداد','تیر','امرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+function qaNorm(s){return norm(s).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)}).replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d)}).replace(/[؟?!.,،:;]/g,' ').replace(/\s+/g,' ').trim()}
+function qaAllCats(){var c={};Ev.CAT_ORDER.forEach(function(k){c[k]=true});return c}
+function qaNextList(){
+  var cats=qaAllCats(),seen={},out=[];
+  [tp.y,tp.y+1].forEach(function(py){Ev.yearEvents(py,cats).forEach(function(o){
+    var k=o.e.t+'|'+o.e.k;if(o.j<today)return;
+    if(!seen[k]){seen[k]=1;out.push(o)}
+  })});
+  return out;
+}
+function qaHtml(q0){
+  var q=qaNorm(q0),cats=qaAllCats(),html='';
+  /* date question: "۲۲ مهر چه مناسبتی دارد" */
+  var m=q.match(/(\d{1,2})\s*(فروردین|اردیبهشت|خرداد|تیر|امرداد|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)/);
+  if(m){
+    var mi=QA_PM.indexOf(m[2]==='مرداد'?'امرداد':m[2])+1,dd=+m[1],py=tp.y;
+    if(mi&&dd>=1&&dd<=31&&!(mi>6&&dd>30)){
+      var j=Cal.p2j(py,mi,dd),list=Ev.eventsOn(j,cats);
+      html='<section class="panel"><div class="label">'+num(dd)+' '+PM[mi-1]+' · '+wdName(j)+' · '+gStr(j)+'</div>'+
+        (list.length?list.map(function(e){return evRow(j,e,{noDate:1,py:py})}).join(''):'<p class="empty-msg" style="margin:6px 0">برای این روز مناسبتی ثبت نشده است.</p>')+'</section>';
+      return html;
+    }
+  }
+  var toks=q.split(' ').filter(function(t){return t&&QA_STOP.indexOf(t)<0&&t.length>1});
+  if(!toks.length)return '<p class="empty-msg">یک پرسش بنویسید، مثلاً «تولد شهبانو کی است؟» یا «۲۲ مهر چه مناسبتی دارد؟».</p>';
+  var groups=toks.map(function(t){
+    for(var i=0;i<QA_SYN.length;i++)if(QA_SYN[i][0].test(t))return QA_SYN[i][1].map(norm);
+    return [t];
+  });
+  var all=qaNextList();
+  function score(o){
+    var h=norm(o.e.t+' '+(o.e.note||'')),c=0;
+    groups.forEach(function(g){if(g.some(function(a){return h.indexOf(a)>=0}))c++});
+    return c;
+  }
+  var scored=all.map(function(o){return {o:o,s:score(o)}}).filter(function(x){return x.s>0});
+  var full=scored.filter(function(x){return x.s===groups.length});
+  var shown=full.length?full:scored.filter(function(x){return x.s>=Math.max(1,groups.length-1)}).sort(function(a,b){return b.s-a.s||a.o.j-b.o.j}).slice(0,8);
+  if(!shown.length)return '<p class="empty-msg">پاسخی پیدا نشد. با واژه‌های دیگری بپرسید، مثلاً نام شخص یا مناسبت را به‌تنهایی بنویسید.</p>';
+  shown=shown.slice(0,15);
+  return '<section class="panel"><div class="label">'+(full.length?'پاسخ':'نزدیک‌ترین نتیجه‌ها')+'</div>'+shown.map(function(x){
+    return evRow(x.o.j,x.o.e,{rel:1,py:pd(x.o.j).y,extra:wdName(x.o.j)+' · '+gStr(x.o.j)});
+  }).join('')+'</section>';
+}
 function evList(){
+  if(st.q.trim())return qaHtml(st.q);
   var q=norm(st.q.trim()),out='',list;
   if(st.evMode==='upcoming'){
     list=[];
